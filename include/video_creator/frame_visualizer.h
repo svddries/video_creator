@@ -27,6 +27,10 @@ public:
 
     void pause();
 
+    int width() const { return width_; }
+
+    int height() const { return height_; }
+
 private:
 
     int width_;
