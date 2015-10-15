@@ -43,6 +43,7 @@ int main(int argc, char **argv)
         canvas = f.nextFrame();
         r3d::Canvas3D canvas3d(canvas);
         camera.rasterize(box, pose, canvas3d);
+        camera.addOutline(canvas3d);
         a += 0.02;
     }
 

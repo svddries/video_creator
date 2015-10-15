@@ -32,6 +32,7 @@ struct Canvas3D
     cv::Mat rgb;
     cv::Mat triangle_map;
     std::vector<TriangleInfo> triangles;
+    std::vector<unsigned int> edge_pixels;
 };
 
 // ----------------------------------------------------------------------------------------------------
@@ -107,6 +108,10 @@ public:
     inline unsigned int canvas_width() const { return canvas_width_; }
     inline unsigned int canvas_height() const { return canvas_height_; }
 
+    // Effects
+
+    void addOutline(Canvas3D& canvas);
+
 private:
 
     double near_clip_z_;
@@ -130,7 +135,7 @@ private:
     void drawTrianglePart(int y_start, int y_end,
                           float x_start, float x_start_delta, float x_end, float x_end_delta,
                           float d_start, float d_start_delta, float d_end, float d_end_delta,
-                          const cv::Vec3b& clr, Canvas3D& canvas) const;
+                          int i_triangle, const cv::Vec3b& clr, Canvas3D& canvas) const;
 
 };
 

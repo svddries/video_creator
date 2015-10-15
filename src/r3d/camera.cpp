@@ -174,9 +174,14 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, c
 
         if (min_x < canvas_width_ || max_x > 0 || min_y < canvas_height_ || max_y > 0)
         {
+            // Add triangle to canvas' triangle list
+            int i_triangle = canvas.triangles.size();
+            canvas.triangles.push_back(TriangleInfo());
+            TriangleInfo& ti = canvas.triangles.back();
+
             // calculate normal and color here
-            Vec3f normal = pose.R * t.normal;
-            float shade = (1 + normal.dot(Vec3(0, 0.3, -1).normalized())) / 2;
+            ti.normal = pose.R * t.normal;
+            float shade = (1 + ti.normal.dot(Vec3(0, 0.3, -1).normalized())) / 2;
             cv::Vec3b clr = shade * cv::Vec3b(255, 255, 255);
 
             if (min_y == max_y) {
@@ -186,7 +191,7 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, c
                 drawTrianglePart(p_min.y, p_mid.y,
                      p_min.x, 0, p_max.x, 0,
                      p_min.z, 0, p_max.z, 0,
-                     clr, canvas);
+                     i_triangle, clr, canvas);
             } else {
                 Vec3f p_min, p_mid, p_max;
                 sort(p1, p2, p3, 1, p_min, p_mid, p_max);
@@ -207,12 +212,12 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, c
                 drawTrianglePart(p_min.y, p_mid.y,
                      p_min.x, (p_a.x - p_min.x) / y_min_mid, p_min.x, (p_b.x - p_min.x) / y_min_mid,
                      p_min.z, (p_a.z - p_min.z) / y_min_mid, p_min.z, (p_b.z - p_min.z) / y_min_mid,
-                     clr, canvas);
+                     i_triangle, clr, canvas);
 
                 drawTrianglePart(p_mid.y, p_max.y,
                      p_a.x, (p_max.x - p_a.x) / y_mid_max, p_b.x, (p_max.x - p_b.x) / y_mid_max,
                      p_a.z, (p_max.z - p_a.z) / y_mid_max, p_b.z, (p_max.z - p_b.z) / y_mid_max,
-                     clr, canvas);
+                     i_triangle, clr, canvas);
 
             }
         }
@@ -224,7 +229,7 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, c
 void Camera::drawTrianglePart(int y_start, int y_end,
                                   float x_start, float x_start_delta, float x_end, float x_end_delta,
                                   float d_start, float d_start_delta, float d_end, float d_end_delta,
-                                  const cv::Vec3b& clr, Canvas3D& canvas) const
+                                  int i_triangle, const cv::Vec3b& clr, Canvas3D& canvas) const
 {
     if (y_start < 0)
     {
@@ -255,6 +260,15 @@ void Camera::drawTrianglePart(int y_start, int y_end,
 
         int x_end2 = std::min<int>(canvas_width_ - 1, (int)x_end);
 
+//        std::cout << x_start2 << "  " << x_start2 + x_start_delta << std::endl;
+        for(int x = x_start2; x <= std::min<int>(x_end2, x_start2 + x_start_delta); ++x)
+            canvas.edge_pixels.push_back(y * canvas_width_ + x);
+
+        for(int x = std::max<int>(x_start2, x_end - x_end_delta); x <= x_end; ++x)
+            canvas.edge_pixels.push_back(y * canvas_width_ + x);
+
+//        canvas.edge_pixels.push_back(y * canvas_width_ + x_end);
+
         for(int x = x_start2; x <= x_end2; ++x)
         {
             float depth = 1.0f / d;
@@ -268,6 +282,7 @@ void Camera::drawTrianglePart(int y_start, int y_end,
             {
                 old_depth = depth;
                 canvas.rgb.at<cv::Vec3b>(i_pixel) = clr;
+                canvas.triangle_map.at<int>(i_pixel) = i_triangle;
             }
 
             d += d_delta;
@@ -278,6 +293,55 @@ void Camera::drawTrianglePart(int y_start, int y_end,
         x_start += x_start_delta;
         x_end += x_end_delta;
     }
+}
+
+// -------------------------------------------------------------------------------
+
+void Camera::addOutline(Canvas3D& canvas)
+{
+    for(unsigned int i = 0; i < canvas.edge_pixels.size(); ++i)
+    {
+        unsigned int i_pixel = canvas.edge_pixels[i];
+
+        float d1 = canvas.depth.at<float>(i_pixel);
+        float d2 = canvas.depth.at<float>(i_pixel - 1);
+        float d3 = canvas.depth.at<float>(i_pixel - canvas.depth.cols);
+
+//        if (std::abs(d1 - d2) > 0.1 || std::abs(d1 - d3) > 0.1)
+            canvas.rgb.at<cv::Vec3b>(i_pixel) = cv::Vec3b(0, 0, 0);
+
+//        canvas.rgb.at<cv::Vec3b>(i_pixel) = cv::Vec3b(0, 0, 0);
+    }
+
+//    for(int y = 1; y < canvas.rgb.rows; ++y)
+//    {
+//        for(int x = 1; x < canvas.rgb.cols; ++x)
+//        {
+//            float d1 = canvas.depth.at<float>(y, x);
+//            float d2 = canvas.depth.at<float>(y, x - 1);
+//            float d3 = canvas.depth.at<float>(y - 1, x);
+
+//            if (std::abs(d1 - d2) > 0.1 || std::abs(d1 - d3) > 0.1)
+//                canvas.rgb.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 0);
+//            else
+//            {
+//                int k1 = canvas.triangle_map.at<int>(y, x);
+//                int k2 = canvas.triangle_map.at<int>(y, x - 1);
+//                int k3 = canvas.triangle_map.at<int>(y - 1, x);
+
+//                if (k1 < 0)
+//                    continue;
+
+//                const TriangleInfo& ti1 = canvas.triangles[k1];
+
+//                if (k2 > 0 && k1 != k2 && std::abs(ti1.normal.dot(canvas.triangles[k2].normal)) < 0.3)
+//                    canvas.rgb.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 0);
+//                else if (k3 > 0 && k1 != k3 && std::abs(ti1.normal.dot(canvas.triangles[k3].normal)) < 0.3)
+//                    canvas.rgb.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 0);
+
+//            }
+//        }
+//    }
 }
 
 } // end namespace r3d
