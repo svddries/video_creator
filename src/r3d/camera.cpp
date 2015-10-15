@@ -31,16 +31,6 @@ void sort(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, int i,
 
 // ----------------------------------------------------------------------------------------------------
 
-Canvas3D createCanvas3D(cv::Mat& rgb)
-{
-    Canvas3D c;
-    c.rgb = rgb;
-    c.depth = cv::Mat(rgb.rows, rgb.cols, CV_32FC1, 0.0);
-    return c;
-}
-
-// ----------------------------------------------------------------------------------------------------
-
 void Camera::rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canvas) const
 {
 
@@ -61,12 +51,13 @@ void Camera::rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canv
         vertices_proj[i] = project3Dto2D(vertices_t[i]);
     }
 
-    int i_triangle = 0;
     for(std::vector<Triangle>::const_iterator it_tri = triangles.begin(); it_tri != triangles.end(); ++it_tri)
     {
-        const Vec3f& p1_3d = vertices_t[it_tri->i1];
-        const Vec3f& p2_3d = vertices_t[it_tri->i2];
-        const Vec3f& p3_3d = vertices_t[it_tri->i3];
+        const Triangle& t = *it_tri;
+
+        const Vec3f& p1_3d = vertices_t[t.i1];
+        const Vec3f& p2_3d = vertices_t[t.i2];
+        const Vec3f& p3_3d = vertices_t[t.i3];
 
         int n_verts_in = 0;
         bool v1_in = false;
@@ -112,7 +103,7 @@ void Camera::rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canv
 
             Vec3f new3(vIn[0]->x + v02.x * t2, vIn[0]->y + v02.y * t2, near_clip_z_);
 
-            drawTriangle(*vIn[0], new2, new3, canvas);
+            drawTriangle(*vIn[0], new2, new3, t, pose, canvas);
         }
         else if (n_verts_in == 2)
         {
@@ -134,9 +125,9 @@ void Camera::rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canv
 
             Vec3f new3((*vIn[1]).x + v02.x * t2, (*vIn[1]).y + v02.y * t2, near_clip_z_);
 
-            drawTriangle(*vIn[0], *vIn[1], new2, canvas);
+            drawTriangle(*vIn[0], *vIn[1], new2, t, pose, canvas);
 
-            drawTriangle(new2, *vIn[1], new3, canvas);
+            drawTriangle(new2, *vIn[1], new3, t, pose, canvas);
 
         }
         else if (n_verts_in == 3)
@@ -148,14 +139,15 @@ void Camera::rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canv
             drawTriangle2D(Vec3f(p1_2d.x, p1_2d.y, 1.0f / -p1_3d.z),
                            Vec3f(p2_2d.x, p2_2d.y, 1.0f / -p2_3d.z),
                            Vec3f(p3_2d.x, p3_2d.y, 1.0f / -p3_3d.z),
-                           canvas);
+                           t, pose, canvas);
         }
     }
 }
 
 // -------------------------------------------------------------------------------
 
-void Camera::drawTriangle(const Vec3f& p1_3d, const Vec3f& p2_3d, const Vec3f& p3_3d, Canvas3D& canvas) const
+void Camera::drawTriangle(const Vec3f& p1_3d, const Vec3f& p2_3d, const Vec3f& p3_3d, const Triangle& t,
+                          const Transform3f& pose, Canvas3D& canvas) const
 {
     Vec2f p1_2d = project3Dto2D(p1_3d);
     Vec2f p2_2d = project3Dto2D(p2_3d);
@@ -164,12 +156,13 @@ void Camera::drawTriangle(const Vec3f& p1_3d, const Vec3f& p2_3d, const Vec3f& p
     drawTriangle2D(Vec3f(p1_2d.x, p1_2d.y, 1.0f / -p1_3d.z),
                    Vec3f(p2_2d.x, p2_2d.y, 1.0f / -p2_3d.z),
                    Vec3f(p3_2d.x, p3_2d.y, 1.0f / -p3_3d.z),
-                   canvas);
+                   t, pose, canvas);
 }
 
 // -------------------------------------------------------------------------------
 
-void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, Canvas3D& canvas) const
+void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Triangle& t,
+                            const Transform3f& pose, Canvas3D& canvas) const
 {
 
     if (!back_face_culling_ || (p2.x - p1.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p2.y - p1.y) < 0)
@@ -179,7 +172,12 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, C
         int min_x = std::min<int>(p1.x, std::min<int>(p2.x, p3.x));
         int max_x = std::max<int>(p1.x, std::max<int>(p2.x, p3.x));
 
-        if (min_x < canvas_width_ || max_x > 0 || min_y < canvas_height_ || max_y > 0) {
+        if (min_x < canvas_width_ || max_x > 0 || min_y < canvas_height_ || max_y > 0)
+        {
+            // calculate normal and color here
+            Vec3f normal = pose.R * t.normal;
+            float shade = (1 + normal.dot(Vec3(0, 0.3, -1).normalized())) / 2;
+            cv::Vec3b clr = shade * cv::Vec3b(255, 255, 255);
 
             if (min_y == max_y) {
                 Vec3f p_min, p_mid, p_max;
@@ -188,7 +186,7 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, C
                 drawTrianglePart(p_min.y, p_mid.y,
                      p_min.x, 0, p_max.x, 0,
                      p_min.z, 0, p_max.z, 0,
-                     canvas);
+                     clr, canvas);
             } else {
                 Vec3f p_min, p_mid, p_max;
                 sort(p1, p2, p3, 1, p_min, p_mid, p_max);
@@ -209,12 +207,12 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, C
                 drawTrianglePart(p_min.y, p_mid.y,
                      p_min.x, (p_a.x - p_min.x) / y_min_mid, p_min.x, (p_b.x - p_min.x) / y_min_mid,
                      p_min.z, (p_a.z - p_min.z) / y_min_mid, p_min.z, (p_b.z - p_min.z) / y_min_mid,
-                     canvas);
+                     clr, canvas);
 
                 drawTrianglePart(p_mid.y, p_max.y,
                      p_a.x, (p_max.x - p_a.x) / y_mid_max, p_b.x, (p_max.x - p_b.x) / y_mid_max,
                      p_a.z, (p_max.z - p_a.z) / y_mid_max, p_b.z, (p_max.z - p_b.z) / y_mid_max,
-                     canvas);
+                     clr, canvas);
 
             }
         }
@@ -226,7 +224,7 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, C
 void Camera::drawTrianglePart(int y_start, int y_end,
                                   float x_start, float x_start_delta, float x_end, float x_end_delta,
                                   float d_start, float d_start_delta, float d_end, float d_end_delta,
-                                  Canvas3D& canvas) const
+                                  const cv::Vec3b& clr, Canvas3D& canvas) const
 {
     if (y_start < 0)
     {
@@ -269,7 +267,7 @@ void Camera::drawTrianglePart(int y_start, int y_end,
             if (old_depth == 0 || old_depth > depth)
             {
                 old_depth = depth;
-                canvas.rgb.at<cv::Vec3b>(i_pixel) = cv::Vec3b(0, 0, 255);
+                canvas.rgb.at<cv::Vec3b>(i_pixel) = clr;
             }
 
             d += d_delta;

@@ -37,6 +37,8 @@ void createBox(const Vec3f& min, const Vec3f& max, Mesh& mesh)
     // bottom plane
     mesh.triangles.push_back(Triangle(p3, p2, p6));
     mesh.triangles.push_back(Triangle(p3, p6, p7));
+
+    mesh.calculateNormals();
 }
 
 }

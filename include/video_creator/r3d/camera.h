@@ -8,18 +8,31 @@ namespace r3d
 {
 
 class Mesh;
+class Triangle;
+
+// ----------------------------------------------------------------------------------------------------
+
+struct TriangleInfo
+{
+    Vec3 normal;
+};
 
 // ----------------------------------------------------------------------------------------------------
 
 struct Canvas3D
 {
+    Canvas3D(cv::Mat& rgb_)
+    {
+        rgb = rgb_;
+        depth = cv::Mat(rgb.rows, rgb.cols, CV_32FC1, 0.0);
+        triangle_map = cv::Mat(rgb.rows, rgb.cols, CV_32SC1, cv::Scalar(-1));
+    }
+
     cv::Mat depth;
     cv::Mat rgb;
+    cv::Mat triangle_map;
+    std::vector<TriangleInfo> triangles;
 };
-
-// ----------------------------------------------------------------------------------------------------
-
-Canvas3D createCanvas3D(cv::Mat& rgb);
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -108,14 +121,16 @@ private:
 
     bool back_face_culling_;
 
-    void drawTriangle(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, Canvas3D& canvas) const;
+    void drawTriangle(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Triangle& t,
+                      const Transform3f& pose, Canvas3D& canvas) const;
 
-    void drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, Canvas3D& canvas) const;
+    void drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Triangle& t,
+                        const Transform3f& pose, Canvas3D& canvas) const;
 
     void drawTrianglePart(int y_start, int y_end,
                           float x_start, float x_start_delta, float x_end, float x_end_delta,
                           float d_start, float d_start_delta, float d_end, float d_end_delta,
-                          Canvas3D& canvas) const;
+                          const cv::Vec3b& clr, Canvas3D& canvas) const;
 
 };
 

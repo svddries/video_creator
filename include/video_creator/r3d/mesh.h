@@ -16,6 +16,8 @@ struct Triangle
         struct { unsigned int i1, i2, i3; };
         unsigned int i[3];
     };
+
+    Vec3 normal;
 };
 
 struct Mesh
@@ -30,6 +32,8 @@ struct Mesh
     }
 
     inline void addTriangle(unsigned int i1, unsigned int i2, unsigned int i3) { triangles.push_back(Triangle(i1, i2, i3)); }
+
+    void calculateNormals();
 };
 } // end namespace r3d
 

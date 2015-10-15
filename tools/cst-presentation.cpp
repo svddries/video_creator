@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     {
         pose.R.setRPY(0.5, a, 0.5);
         canvas = f.nextFrame();
-        r3d::Canvas3D canvas3d = r3d::createCanvas3D(canvas);
+        r3d::Canvas3D canvas3d(canvas);
         camera.rasterize(box, pose, canvas3d);
         a += 0.02;
     }
