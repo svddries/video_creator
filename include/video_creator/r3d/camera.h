@@ -45,7 +45,7 @@ public:
 
     virtual ~Camera() {}
 
-    void rasterize(const Mesh& mesh, const Transform3f& pose, Canvas3D& canvas) const;
+    void rasterize(const Mesh& mesh, const cv::Vec3b& color, const Transform3f& pose, Canvas3D& canvas) const;
 
     inline Vec2f project3Dto2D(const Vec3f& p) const
     {
@@ -122,10 +122,10 @@ private:
     bool back_face_culling_;
 
     void drawTriangle(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Triangle& t,
-                      const Transform3f& pose, Canvas3D& canvas) const;
+                      const Transform3f& pose, const cv::Vec3b& color, Canvas3D& canvas) const;
 
     void drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Triangle& t,
-                        const Transform3f& pose, Canvas3D& canvas) const;
+                        const Transform3f& pose, const cv::Vec3b& color, Canvas3D& canvas) const;
 
     void drawTrianglePart(int y_start, int y_end,
                           float x_start, float x_start_delta, float x_end, float x_end_delta,
