@@ -21,6 +21,7 @@ set(INCLUDE_FILES
     include/video_creator/math/math.h
     include/video_creator/frame_processor.h
     include/video_creator/color.h
+    include/video_creator/script_interpreter.h
 
     include/video_creator/r3d/mesh.h
     include/video_creator/r3d/camera.h
@@ -35,6 +36,7 @@ set(INCLUDE_FILES
 set(SOURCE_FILES
     src/frame_visualizer.cpp
     src/frame_processor.cpp
+    src/script_interpreter.cpp
 
     src/r3d/scene.cpp
     src/r3d/camera.cpp

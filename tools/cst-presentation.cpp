@@ -6,24 +6,10 @@
 
 #include <video_creator/text/text.h>
 
-int main(int argc, char **argv)
+#include <video_creator/script_interpreter.h>
+
+void box(FrameVisualizer& f, cv::Mat& title_screen)
 {
-    FrameVisualizer f(1280, 800, false);
-    f.setBackgroundColor(cv::Scalar(255, 255, 255));
-    f.setFrameRate(50);
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    // Set Title text
-    cv::Mat title_screen = f.createFrame();
-
-    text::Font font;
-    font.color = Color(0, 0, 0);
-    font.name = "Garuda";
-    font.size = 0.05;
-
-    text::addText(title_screen, "World Modeling in Robotics", font, 0.5, 0.1);
-
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     r3d::Mesh box;
@@ -56,6 +42,20 @@ int main(int argc, char **argv)
     }
 
     f.pause();
+}
+
+// ----------------------------------------------------------------------------------------------------
+
+int main(int argc, char **argv)
+{
+    FrameVisualizer f(1280, 800, false);
+    f.setBackgroundColor(cv::Scalar(255, 255, 255));
+    f.setFrameRate(50);
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    ScriptInterpreter interpreter(&f);
+    interpreter.open("/home/sdries/code/video_creator/pres/cst-seminar/pres.txt");
 
     return 0;
 }
