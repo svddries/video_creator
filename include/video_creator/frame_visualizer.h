@@ -11,11 +11,13 @@ class FrameVisualizer : public FrameProcessor
 
 public:
 
-    FrameVisualizer(int width, int height);
+    FrameVisualizer(int width, int height, bool full_screen = false);
 
     ~FrameVisualizer();
 
-    cv::Mat& nextFrame();
+    cv::Mat createFrame() const;
+
+    void show(const cv::Mat& canvas);
 
     void setBackgroundColor(const cv::Scalar& clr) { background_clr_ = clr; }
 

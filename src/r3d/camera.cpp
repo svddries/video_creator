@@ -48,7 +48,7 @@ void Camera::rasterize(const Mesh& mesh, const cv::Vec3b& color, const Transform
     for(unsigned int i = 0; i < vertices.size(); ++i)
     {
         vertices_t[i] = pose * vertices[i];
-        vertices_proj[i] = project3Dto2D(vertices_t[i]);
+        vertices_proj[i] = project3Dto2D(vertices_t[i], canvas.depth.cols);
     }
 
     for(std::vector<Triangle>::const_iterator it_tri = triangles.begin(); it_tri != triangles.end(); ++it_tri)
@@ -149,9 +149,9 @@ void Camera::rasterize(const Mesh& mesh, const cv::Vec3b& color, const Transform
 void Camera::drawTriangle(const Vec3f& p1_3d, const Vec3f& p2_3d, const Vec3f& p3_3d, const Triangle& t,
                           const Transform3f& pose, const cv::Vec3b& color, Canvas3D& canvas) const
 {
-    Vec2f p1_2d = project3Dto2D(p1_3d);
-    Vec2f p2_2d = project3Dto2D(p2_3d);
-    Vec2f p3_2d = project3Dto2D(p3_3d);
+    Vec2f p1_2d = project3Dto2D(p1_3d, canvas.depth.cols);
+    Vec2f p2_2d = project3Dto2D(p2_3d, canvas.depth.cols);
+    Vec2f p3_2d = project3Dto2D(p3_3d, canvas.depth.cols);
 
     drawTriangle2D(Vec3f(p1_2d.x, p1_2d.y, 1.0f / -p1_3d.z),
                    Vec3f(p2_2d.x, p2_2d.y, 1.0f / -p2_3d.z),
@@ -172,7 +172,7 @@ void Camera::drawTriangle2D(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, c
         int min_x = std::min<int>(p1.x, std::min<int>(p2.x, p3.x));
         int max_x = std::max<int>(p1.x, std::max<int>(p2.x, p3.x));
 
-        if (min_x < canvas_width_ || max_x > 0 || min_y < canvas_height_ || max_y > 0)
+        if (min_x < canvas.depth.cols || max_x > 0 || min_y < canvas.depth.rows || max_y > 0)
         {
             // calculate normal and color here
             Vec3f normal = pose.R * t.normal;
@@ -235,7 +235,7 @@ void Camera::drawTrianglePart(int y_start, int y_end,
         y_start = 0;
     }
 
-    y_end = std::min<int>(canvas_height_ - 1, y_end);
+    y_end = std::min<int>(canvas.depth.rows - 1, y_end);
 
     for(int y = y_start; y <= y_end; ++y)
     {
@@ -253,13 +253,13 @@ void Camera::drawTrianglePart(int y_start, int y_end,
             x_start2 = x_start;
         }
 
-        int x_end2 = std::min<int>(canvas_width_ - 1, (int)x_end);
+        int x_end2 = std::min<int>(canvas.depth.cols - 1, (int)x_end);
 
         for(int x = x_start2; x <= x_end2; ++x)
         {
             float depth = 1.0f / d;
 
-            int i_pixel = y * canvas_width_ + x;
+            int i_pixel = y * canvas.depth.cols + x;
 
             float& old_depth = canvas.depth.at<float>(i_pixel);
 

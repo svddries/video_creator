@@ -47,9 +47,9 @@ public:
 
     void rasterize(const Mesh& mesh, const cv::Vec3b& color, const Transform3f& pose, Canvas3D& canvas) const;
 
-    inline Vec2f project3Dto2D(const Vec3f& p) const
+    inline Vec2f project3Dto2D(const Vec3f& p, int width) const
     {
-        return Vec2f((fx_ * p.x + tx_) / -p.z + cx_, (fy_ * -p.y + ty_) / -p.z + cy_);
+        return Vec2f((fx_ * p.x + tx_) / -p.z + cx_, (fy_ * -p.y + ty_) / -p.z + cy_) * width;
     }
 
     inline float project2Dto3DX(int x) const
@@ -89,12 +89,6 @@ public:
         cy_plus_ty_ = cy_ + ty_;
     }
 
-    inline void setCanvasSize(unsigned int w, unsigned int h)
-    {
-       canvas_width_ = w;
-       canvas_height_ = h;
-    }
-
     inline double getFocalLengthX() const { return fx_; }
     inline double getFocalLengthY() const { return fy_; }
 
@@ -103,9 +97,6 @@ public:
 
     inline double getOpticalTranslationX() const { return tx_; }
     inline double getOpticalTranslationY() const { return ty_; }
-
-    inline unsigned int canvas_width() const { return canvas_width_; }
-    inline unsigned int canvas_height() const { return canvas_height_; }
 
 private:
 
@@ -116,8 +107,6 @@ private:
     double tx_, ty_;
     double cx_plus_tx_;
     double cy_plus_ty_;
-
-    unsigned int canvas_width_, canvas_height_;
 
     bool back_face_culling_;
 

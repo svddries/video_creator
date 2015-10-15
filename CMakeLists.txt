@@ -10,15 +10,26 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
 )
 
+include(FindPkgConfig)
+pkg_check_modules(CAIRO_FT REQUIRED cairo-ft)
+add_definitions(${CAIRO_FT_CFLAGS})
+link_libraries(${CAIRO_FT_LDFLAGS})
+
+
 set(INCLUDE_FILES
     include/video_creator/frame_visualizer.h
     include/video_creator/math/math.h
     include/video_creator/frame_processor.h
+    include/video_creator/color.h
 
     include/video_creator/r3d/mesh.h
     include/video_creator/r3d/camera.h
     include/video_creator/r3d/primitives.h
     include/video_creator/r3d/scene.h
+
+    include/video_creator/text/text.h
+    include/video_creator/text/text_impl.h
+
 )
 
 set(SOURCE_FILES
@@ -29,6 +40,9 @@ set(SOURCE_FILES
     src/r3d/camera.cpp
     src/r3d/mesh.cpp
     src/r3d/primitives.cpp
+
+    src/text/text.cpp
+    src/text/text_impl.cpp
 )
 
 add_library(video_creator

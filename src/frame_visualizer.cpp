@@ -6,9 +6,14 @@
 
 // ----------------------------------------------------------------------------------------------------
 
-FrameVisualizer::FrameVisualizer(int width, int height)
+FrameVisualizer::FrameVisualizer(int width, int height, bool full_screen)
     : width_(width), height_(height), background_clr_(0, 0, 0)
 {
+    if (full_screen)
+    {
+        cv::namedWindow("video", CV_WINDOW_NORMAL);
+        cv::setWindowProperty("video", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+    }
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -28,15 +33,15 @@ void FrameVisualizer::pause()
 
 // ----------------------------------------------------------------------------------------------------
 
-cv::Mat& FrameVisualizer::nextFrame()
+cv::Mat FrameVisualizer::createFrame() const
 {
-    if (!draw_canvas_.data)
-    {
-        draw_canvas_ = cv::Mat(height_, width_, CV_8UC3, background_clr_);
-        show_canvas_ = cv::Mat(height_, width_, CV_8UC3, background_clr_);
-        return draw_canvas_;
-    }
+    return cv::Mat(height_, width_, CV_8UC3, background_clr_);
+}
 
+// ----------------------------------------------------------------------------------------------------
+
+void FrameVisualizer::show(const cv::Mat& canvas)
+{
     double dt_sec = timer_.getElapsedTimeInSec();
 
     double wait_time_sec = dt() - dt_sec;
@@ -46,19 +51,9 @@ cv::Mat& FrameVisualizer::nextFrame()
 
     timer_.reset();
 
-    // Swap canvas
-    cv::Mat tmp = show_canvas_;
-    show_canvas_ = draw_canvas_;
-    draw_canvas_ = tmp;
-
-    cv::imshow("video", show_canvas_);
+    cv::imshow("video", canvas);
     char key = cv::waitKey(3);
     if (key == 'q')
         exit(1);
-
-
-    draw_canvas_.setTo(background_clr_);
-
-    return draw_canvas_;
 }
 
